@@ -1,9 +1,18 @@
-//const symbols = [['1','2','3'],['4','5','6'],['7','8','9'],['','0','']];
-//const operators = ['+','-','*','/'];
+//Constants and global variables
 const operators = {'+':add, '-':subtract, '*':multiply, '/':divide};
 const NUM_LIMIT = 10**20;
-let computing, leftOperand, rightOperand, operator, result;
+const left = 'left';
+const right = 'right';
+const Modes = {
+    left: 0,
+    right: 1,
+    result: 2,
+}
+Object.freeze(Modes);
+const operands = {};
+let operator, mode;
 
+//Mathematical operations
 function add(a,b) {
     return a + b;
 }
@@ -21,46 +30,90 @@ function divide(a,b) {
     return a / b;
 }
 
-function operate(a=leftOperand, b=rightOperand, operator=operator) {
-    if (b !== null) {
-        leftOperand = operator(a,b);
-        rightOperand = null;
+//Reset settings
+function clear() {
+    operands[left] = 0;
+    operands[right] = null;
+    operator = null;
+    output.textContent = '0';
+    mode = Modes.left;
+}
+
+//Determine what operand you're editing using the mode
+function determineOperand() {
+    if (mode === Modes.left)
+        return left;
+    else if (mode === Modes.right) 
+        return right;
+    return null;
+}
+
+//Update state for digit input
+function sendNewDigit(digit) {
+    let operand;
+    let num = parseInt(digit);
+    if (mode === Modes.result) {
+        clear();
+        operand = left;
+        operands[operand] = num;
+        mode = Modes.left;
+    } else {
+        operand = determineOperand();
+        if (operands[operand] < NUM_LIMIT) {
+            operands[operand] *= 10;
+            operands[operand] += num
+        }
+    }    
+    display(operands[operand]);
+}
+
+//Update state for operator input
+function setOperator(op) {
+    console.log("setOperator");
+    let outStr = '';
+    if (mode === Modes.right) {
+        operate();
+        outStr += ` = ${operands[left]} `;
     }
     else
-        //TODO:
-        console.log(b);
+        mode = Modes.right;
+    operator = operators[op];
+    operands[right] = 0;
+    outStr += op;
+    display(outStr); 
+}
+
+//Update state for equals input
+function setEquals() {
+    console.log("setEquals");
+    if (mode === Modes.right)
+        operate();
+    operands[right] = null;
+    operator = null;
+    mode = Modes.result;
+    display(operands[left]);
+}
+
+//Perform calculation
+function operate(a=operands[left], b=operands[right], op=operator) {
+    console.log("operate");
+    if (b !== null) {
+        console.log(op);
+        operands[left] = op(a,b);
+    }
+    else 
+        console.log("ERROR");
     
 }
 
-function clear() {
-    computing = false;
-    leftOperand = 0;
-    rightOperand = null;
-    operator = null;
-    result = 0;
-    output.textContent = '0';
-}
-
-function sendNewDigit(digit) {
-    if (result < NUM_LIMIT) {
-        result *= 10;
-        result += parseInt(digit);
-    }
-    display();
-}
-
-function display(content=result) {
+//Display result to screen
+function display(content=operands[left]) {
     if (content === null)
         output.textContent = 'ERROR';
+    else if (typeof content === 'number')
+        output.textContent = content; //TODO: Round number
     else
         output.textContent = content;
-}
-
-function setOperator(op) {
-    if (operator !== null && rightOperand !== null)
-        operate();
-    operator = operators[op];
-    display(op);
 }
 
 //Create variables for HTML I/O
@@ -78,21 +131,7 @@ operatorButtons.forEach((button) =>
 const clearButton = document.querySelector('button.clear');
 clearButton.addEventListener('click', () => clear());
 const equalsButton = document.querySelector('button.equals');
-clearButton.addEventListener('click', () => operate());
+equalsButton.addEventListener('click', () => setEquals());
 
+//Initialize variables
 clear();
-
-/*function generateSymbolGrid() {
-    let columns = 3;
-    let rows = 4;
-    gridContainer.style.gridTemplateColumns = 'auto '.repeat(columns).trim();
-    for (let r = 0; r < rows; r++) {
-        for (let c = 0; c < columns; c++) {
-            let button = document.createElement('button');
-            button.type = 'button';
-            button.className = 'symbol';
-            button.addEventListener('click', () => operate(symbols[r][c]));
-            gridContainer.appendChild(button);
-        }
-    }
-}*/
